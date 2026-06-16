@@ -20,11 +20,17 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Description("Main command for SimpleEconomy")
 public class SECommand extends BaseCommand {
 
-    private final SimpleEconomy plugin = SimpleEconomy.getInstance();
-    private final LanguageManager languageManager = plugin.getLanguageManager();
+    private final SimpleEconomy plugin;
+    private final LanguageManager languageManager;
+    private final SettingsConfig settingsConfig;
+
+    public SECommand(SimpleEconomy plugin, LanguageManager languageManager, SettingsConfig settingsConfig) {
+        this.plugin = plugin;
+        this.languageManager = languageManager;
+        this.settingsConfig = settingsConfig;
+    }
 
     @Default
-    @SuppressWarnings("UnstableApiUsage")
     public void root(Player player) {
         PluginMeta pluginMeta = plugin.getPluginMeta();
         String currentVersion = pluginMeta.getVersion();
@@ -61,7 +67,7 @@ public class SECommand extends BaseCommand {
         plugin.runAsync(() -> {
             int cacheSize = plugin.getCache().getAll().size();
             int dirtyEntries = plugin.getCache().getDirtySize();
-            String dbType = SettingsConfig.getInstance().storageSystem();
+            String dbType = settingsConfig.storageSystem();
 
             int activeTasks = 0;
             int queueSize = 0;
@@ -77,7 +83,7 @@ public class SECommand extends BaseCommand {
                     "%dirtyEntries%", String.valueOf(dirtyEntries),
                     "%dbType%", dbType,
                     "%activeTasks%", String.valueOf(activeTasks),
-                    "%threadPoolSize%", String.valueOf(SettingsConfig.getInstance().getThreadPoolSize()),
+                    "%threadPoolSize%", String.valueOf(settingsConfig.getThreadPoolSize()),
                     "%queueSize%", String.valueOf(queueSize)
             );
         });

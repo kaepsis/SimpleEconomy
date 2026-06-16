@@ -39,6 +39,9 @@ public enum LanguageKeys {
     VOUCHER_CREATED("messages.voucher.created"),
     VOUCHER_CHECKED("messages.voucher.checked"),
 
+    WALLET_HEADER("messages.wallet.header"),
+    WALLET_LINE("messages.wallet.line"),
+
     BALTOP_HEADER("messages.baltop.header"),
     BALTOP_ENTRY("messages.baltop.entry"),
     BALTOP_FOOTER("messages.baltop.footer"),

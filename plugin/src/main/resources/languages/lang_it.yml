@@ -36,6 +36,9 @@ messages:
     usage: '%prefix% &#6B7280Uso &#374151| &#F9FAFB/voucher <importo>'
     created: '%prefix% &#22C55E✔ &#6B7280Voucher creato con successo per &#F9FAFB%amount%'
     checked: '%prefix% &#22C55Eℹ &#6B7280Hai incassato un voucher del valore di &#F9FAFB%amount%'
+  wallet:
+    header: '&r    &#22C55E● &#6B7280Il tuo portafoglio &#22C55E● '
+    line: '&r &#22C55E» &#6B7280%currency% &#374151: &#6B7280%balance%'
   baltop:
     header: '&#22C55E💰 &#6B7280Top &#F9FAFB%limit% &#6B7280giocatori più ricchi'
     entry: '&#6B7280#%position% &#F9FAFB%player% &#6B7280- &#22C55E%balance%'

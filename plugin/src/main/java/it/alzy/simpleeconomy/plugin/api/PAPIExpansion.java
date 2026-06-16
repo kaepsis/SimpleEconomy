@@ -37,7 +37,6 @@ public class PAPIExpansion extends PlaceholderExpansion {
     }
 
     @Override
-    @SuppressWarnings("UnstableApiUsage")
     public @NotNull String getVersion() {
         PluginMeta pluginMeta = plugin.getPluginMeta();
         return pluginMeta.getVersion();

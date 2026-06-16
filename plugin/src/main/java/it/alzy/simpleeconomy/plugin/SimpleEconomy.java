@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.Logger;
 
 public class SimpleEconomy extends JavaPlugin {
 
@@ -83,10 +82,13 @@ public class SimpleEconomy extends JavaPlugin {
     private ModuleManager moduleManager;
     @Getter
     private boolean isPaper;
+    
+    private SettingsConfig settingsConfig;
 
     @Override
     public void onEnable() {
         instance = this;
+        settingsConfig = SettingsConfig.getInstance();
         try {
             Class.forName("it.alzy.simpleeconomy.plugin.utils.ChatUtils");
         } catch (ClassNotFoundException e) {
@@ -138,9 +140,7 @@ public class SimpleEconomy extends JavaPlugin {
             executor.shutdown();
         }
 
-        if (cache != null) {
-            cache.invalidateAll();
-        }
+        cache.invalidateAll();
 
         if (topMap != null) {
             topMap.clear();
@@ -193,7 +193,7 @@ public class SimpleEconomy extends JavaPlugin {
         }
         executor = Executors.newFixedThreadPool(settings.getThreadPoolSize());
         topMap = new LinkedHashMap<>();
-        languageManager = new LanguageManager(this, SettingsConfig.getInstance().locale());
+        languageManager = new LanguageManager(this, settingsConfig.locale());
         transactionHelper = new TransactionHelper(this, languageManager);
 
         formatUtils = new FormatUtils();
@@ -224,8 +224,7 @@ public class SimpleEconomy extends JavaPlugin {
     }
 
     private void initializeStorage() {
-        SettingsConfig settings = SettingsConfig.getInstance();
-        String system = settings.storageSystem().toLowerCase();
+        String system = settingsConfig.storageSystem().toLowerCase();
 
         switch (system) {
             case "sqlite" -> {
@@ -235,13 +234,13 @@ public class SimpleEconomy extends JavaPlugin {
             case "file" -> storage = new FileStorage(getDataFolder(), this);
             case "mysql" -> {
                 var info = new DatabaseInfo(
-                        settings.getDBHost(),
-                        settings.getDBUsername(),
-                        settings.getDBPassword(),
-                        settings.getDBPort(),
-                        settings.getDBName(),
-                        settings.getDBMaxPool(),
-                        settings.getDBPrefixTable()
+                        settingsConfig.getDBHost(),
+                        settingsConfig.getDBUsername(),
+                        settingsConfig.getDBPassword(),
+                        settingsConfig.getDBPort(),
+                        settingsConfig.getDBName(),
+                        settingsConfig.getDBMaxPool(),
+                        settingsConfig.getDBPrefixTable()
                 );
                 storage = new MySQLStorage(this, info);
             }
@@ -254,13 +253,15 @@ public class SimpleEconomy extends JavaPlugin {
 
     private void initializeFeatures() {
         registerListeners();
+        initializeCommandManager();
+        currencyManager = new CurrencyManager();
         registerCommands();
         new AutoSaveTask(this).register();
         new BalTopRefreshTask(this).register();
-        if (SettingsConfig.getInstance().isInterestEnabled()) {
+        if (settingsConfig.isInterestEnabled()) {
             new InterestTask(this).register();
         }
-        if (SettingsConfig.getInstance().registerPlaceholderAPI()) {
+        if (settingsConfig.registerPlaceholderAPI()) {
             if (getServer().getPluginManager().getPlugin("PlaceholderAPI") == null) {
                 getLogger().warning(
                         "PlaceholderAPI not detected, but 'use-placeholderapi' is enabled. Please install PlaceholderAPI or disable this option.");
@@ -269,20 +270,19 @@ public class SimpleEconomy extends JavaPlugin {
             }
         }
 
-        if (SettingsConfig.getInstance().isTransactionLoggingEnabled()) {
+        if (settingsConfig.isTransactionLoggingEnabled()) {
             transactionLogger = new TransactionLogger(this);
             transactionLogger.init();
         }
 
-        if (SettingsConfig.getInstance().shouldLogToDiscord()) {
+        if (settingsConfig.shouldLogToDiscord()) {
             webhookLogger = new WebhookLogger();
         }
 
-        if (SettingsConfig.getInstance().isAutoPurgeEnabled()) {
+        if (settingsConfig.isAutoPurgeEnabled()) {
             new AutoPurgeTask(this).register();
         }
         loadApis();
-        currencyManager = new CurrencyManager();
     }
 
     private void loadApis() {
@@ -295,12 +295,31 @@ public class SimpleEconomy extends JavaPlugin {
         var pm = getServer().getPluginManager();
         pm.registerEvents(new PlayerListener(this, languageManager), this);
 
-        if (SettingsConfig.getInstance().areVoucherEnabled()) {
+        if (settingsConfig.areVoucherEnabled()) {
             pm.registerEvents(new VoucherEvents(), this);
         }
     }
 
     private void registerCommands() {
+        commandManager.registerCommand(new SECommand(instance, languageManager, settingsConfig));
+        commandManager.registerCommand(new ECOCommand());
+        commandManager.registerCommand(new BalanceCommand());
+        commandManager.registerCommand(new PayCommand());
+        commandManager.registerCommand(new BalTopCommand());
+        commandManager.registerCommand(new CurrenciesCommand());
+        commandManager.registerCommand(new ModulesCommand());
+        commandManager.registerCommand(new WalletCommand(languageManager, currencyManager));
+
+        if (settingsConfig.areVoucherEnabled()) {
+            commandManager.registerCommand(new VoucherCommand());
+        }
+
+        if (settingsConfig.isTransactionLoggingEnabled()) {
+            commandManager.registerCommand(new ECOHistoryCommand());
+        }
+    }
+
+    private void initializeCommandManager() {
         commandManager = new PaperCommandManager(this);
         commandManager.getCommandContexts().registerContext(Double.class, c -> {
             String arg = c.popFirstArg();
@@ -335,23 +354,6 @@ public class SimpleEconomy extends JavaPlugin {
                     .map(File::getName)
                     .toList();
         });
-
-
-        commandManager.registerCommand(new SECommand());
-        commandManager.registerCommand(new ECOCommand());
-        commandManager.registerCommand(new BalanceCommand());
-        commandManager.registerCommand(new PayCommand());
-        commandManager.registerCommand(new BalTopCommand());
-        commandManager.registerCommand(new CurrenciesCommand());
-        commandManager.registerCommand(new ModulesCommand());
-
-        if (SettingsConfig.getInstance().areVoucherEnabled()) {
-            commandManager.registerCommand(new VoucherCommand());
-        }
-
-        if (SettingsConfig.getInstance().isTransactionLoggingEnabled()) {
-            commandManager.registerCommand(new ECOHistoryCommand());
-        }
     }
 
     public void runAsync(Runnable task) {
@@ -369,8 +371,8 @@ public class SimpleEconomy extends JavaPlugin {
     }
 
     private void loadConfigurations() {
-        SettingsConfig.getInstance().registerLightConfig(this);
-        SettingsConfig.getInstance().checkMissingKeys();
+        settingsConfig.registerLightConfig(this);
+        settingsConfig.checkMissingKeys();
         CurrenciesConfig.getInstance().registerLightConfig(this);
     }
 
